@@ -1,15 +1,25 @@
 ; function hasUserMedia(){
     return !!(navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUsermedia || navigator.msgetUserMedia);
 }
-if(hasUserMedia()){
-    navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUsermedia || navigator.msgetUserMedia;
-    navigator.getUserMedia(constraints,(stream)=>{
-        let video = document.querySelector('video');
-        video.src = window.URL.createObjectURL(stream);
-    },(err)=>{
-        console.log(err);
-    });
-}
+//已弃用
+// MediaStreamTrack.getSources(function(sources){
+//     let audioSource = null,
+//         videoSource = null;
+//     for(let i=0,j=sources.length;i<j;i++){
+//         let source = sources[i];
+//         if(source.kind === 'audio'){
+//             console.log('audio founded',source.id,source.label);
+//             audioSource = source.id;
+//         }
+//         else if(source.kind === 'video'){
+//             console.log('video founded',source.id,source.label);
+//             videoSource = source.id;
+//         }
+//         else{
+//             console.log("unknown device");
+//         }  
+//     }
+// });
 let constraints = {
     video:{
         mandatory: {
@@ -19,13 +29,34 @@ let constraints = {
     },
     audio:false
 };
+//移动端限制大小
 if(/Android|webOS|iPhone|iPad|iPod|Blackberry|IEMobile|Opera|Mini/i.test(navigator.userAgent)){
     constraints = {
         video:{
             minWidth: 250,
             minHeight: 250,
-            maxWidth: 300,
-            maxHeight: 300
-        }
+            maxWidth: 480,
+            maxHeight: 320
+        },
+        audio:false
     }
+}
+let video = document.querySelector('video');
+let photo = document.querySelector('canvas');
+let capture = document.getElementById('capture');
+
+if(hasUserMedia()){
+    navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUsermedia || navigator.msgetUserMedia;
+    navigator.getUserMedia(constraints,(stream)=>{
+        video.src = window.URL.createObjectURL(stream);
+    },(err)=>{
+        console.log(err);
+    });
+    
+    capture.addEventListener('click',(e)=>{
+        photo.width = video.getBoundingClientRect().width;
+        photo.height = video.getBoundingClientRect().height;
+        let ctx = photo.getContext('2d');
+        ctx.drawImage(video,0,0);
+    },false);
 }
