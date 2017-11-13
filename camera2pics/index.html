@@ -1,0 +1,50 @@
+<!DOCTYPE>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>media</title>
+    <style>
+        video,
+        canvas {
+            border: 1px solid gray;
+            width: 480px;
+            height: 300px;
+        }
+
+        .grayscale {
+            -webkit-filter: grayscale(1);
+            -moz-filter: grayscale(1);
+            -o-filter: grayscale(1);
+            -ms-filter: grayscale(1);
+            filter: grayscale(1);
+        }
+
+        .sepia {
+            filter: sepia(1);
+            -webkit-filter: sepia(1);
+            -moz-filter: sepia(1);
+            -o-filter: sepia(1);
+            -ms-filter: sepia(1);
+        }
+
+        .invert {
+            filter: invert(1);
+            -webkit-filter: invert(1);
+            -ms-filter: invert(1);
+            -moz-filter: invert(1);
+            -o-filter: invert(1);
+        }
+    </style>
+</head>
+
+<body>
+    <video autoplay></video>
+    <canvas></canvas>
+    <button id="capture">Take a picture</button>
+    <script src='./main.js'></script>
+</body>
+
+</html>

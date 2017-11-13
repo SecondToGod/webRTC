@@ -44,6 +44,8 @@ if(/Android|webOS|iPhone|iPad|iPod|Blackberry|IEMobile|Opera|Mini/i.test(navigat
 let video = document.querySelector('video');
 let photo = document.querySelector('canvas');
 let capture = document.getElementById('capture');
+let filters = ['grayscale','sepia','invert'];
+let currentFilter = 0;
 
 if(hasUserMedia()){
     navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUsermedia || navigator.msgetUserMedia;
@@ -57,6 +59,9 @@ if(hasUserMedia()){
         photo.width = video.getBoundingClientRect().width;
         photo.height = video.getBoundingClientRect().height;
         let ctx = photo.getContext('2d');
-        ctx.drawImage(video,0,0);
+        ctx.drawImage(video,0,0,photo.width,photo.height);
+        currentFilter++;
+        currentFilter %= (filters.length);
+        photo.className = filters[currentFilter];
     },false);
 }
