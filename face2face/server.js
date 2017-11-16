@@ -1,84 +1,107 @@
-const webSocketServer = require('ws').Server();
+const ws = require('ws');
+const webSocketServer =  ws.Server;
+const wss = new webSocketServer({port:8888});
 
-let users={};
-function sentTo(con,obj){
+function sendTo(con,obj){
     con.send(JSON.stringify(obj));
 }
-const wss = new webSocketServer({port:8888});
+let users={};
 wss.on('connection',(connection)=>{
     console.log('connected.');
     connection.on('message',(message)=>{
-        let data = {};
+        let data;
         try{
             data = JSON.parse(message);
         }catch(e){
-            console.log("unknown message object.");
+            data = {};
+            console.log('parsing error.');
         }
         switch(data.type){
             case 'login':{
                 if(users[data.name]){
                     console.log("already login.");
                     sendTo(connection,{
+                        type: 'login',
                         success: false,
                     });
                 }else{
                     users[data.name] = connection;
                     connection.name = data.name;
-                    sentTo(connection,{
+                    sendTo(connection,{
+                        type: 'login',
                         success: true,
                     });
                 }
             } break;
             case 'offer':{
-                let con = data.con;
-                connection.othername = con;
-                if(users[con]){
+                let con = users[data.name];
+                if(con){
+                    connection.othername = data.name;
                     sendTo(con,{
                         type: 'offer',
                         offer: data.offer,
+                        name: connection.name, 
                     });
-                }else{
-                    console.log('no such connection'+ data.con);
+                }
+                else{
+                    console.log('no such user'+ data.name);
                 }
             } break;
             case 'answer':{
-                let con = data.con;
-                if(users[con]){
+                let con = users[data.name];
+                if(con){
                     sendTo(con,{
                         type: 'answer',
                         answer: data.answer,
                     });
                 }else{
-                    console.log('no such connection'+ data.con);
+                    console.log('no such user'+ data.name);
                 }
             } break;
             case 'candidate':{
-                let con = data.con;
-                if(users[con]){
+                let con = users[data.name];
+                if(con){
                     sendTo(con,{
                         type: 'candidate',
                         candidate: data.candidate,
                     });
                 }else{
-                    console.log('no such connection'+ data.con);
+                    console.log('no such user'+ data.name);
                 }
             } break;
             case 'leave':{
-                if(users[connection.name]){
-                    connection.othername = null;
-                    delete users[connection.name];
-                    console.log('you have disconnected.');
+                let con = users[data.name];
+                con.othername = null;
+                if(con){
+                    sendTo(con,{
+                        type: 'leave',
+                    });
                 }
-                else{
-                    console.log("you haven't login .");
-                }
-            }
+            } break;
             default:{
-                console.log('unknown message type');
+                sendTo(connection,{
+                    type: 'error',
+                    message: 'unknown message type',
+                });
+            } break;
+        }
+    });
+    connection.on('close',()=>{
+        if(connection.name){
+            delete users[connection.name];
+            if(connection.othername){
+                let con = users[connection.othername];
+                con.othername = null;
+                if(con){
+                    sendTo(con,{
+                        type: 'leave',
+                    });
+                }
             }
         }
     });
 });
-wss.on('close',()=>{
-    console.log('you have left.')
-});
+
+wss.on('listening',()=>{
+    console.log('server started ...');
+})
