@@ -56,6 +56,88 @@ function onLogin(success){
     }else{
         loginPage.style.display = 'none';
         callPage.style.display = 'block';
-        startConnection();
+        startConnection();//开始一个对等连接
     }
+}
+let yourvideo = document.querySelector('#yours'),
+    theirvideo = document.querySelector('#theirs'),
+    yourConnection,theirConnection,stream;
+function startConnection(){
+    navigator.getUserMedia = navigator.getUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia
+                            || navigator.webkitGetUserMedia;
+    if(navigator.getUserMedia){
+        navigator.getUserMedia({
+            video: true,
+            audio: false,
+        },(mystream)=>{
+            stream = mystream;
+            yourvideo .src = window.URL.createObjectURL(stream);
+        },(err)=>{
+            console.log(err);
+        });
+        window.RTCPeerConnection = window.RTCPeerConnection || window.webkitRTCPeerConnection ||window.mozRTCPeerConnection
+                                || window.msRTCPeerConnection;
+        window.RTCSessionDescription = window.RTCSessionDescription || window.RTCSessionDescription ||window.mozRTCSessionDescription
+                                || window.msRTCSessionDescription;
+        window.RTCIceCandidate = window.RTCIceCandidate || window.webkitRTCIceCandidate ||window.mozRTCIceCandidate
+                                || window.msRTCIceCandidate;
+        if(window.RTCPeerConnection){
+            setupPeerConnection(stream);
+        }else{
+            alert('对你不起，你的浏览器不支持RTCPeerConnection');
+        }
+    }
+}
+function setupPeerConnection(stream){
+    let configuration = {
+        //'iceServers': [{'url':'stun:stun.1.google.com:19302'}]
+    };
+    yourConnection = new RTCPeerConnection(configuration);
+    yourConnection.addStream(stream);
+    yourConnection.onaddstream = function(e){
+        theirvideo.src = window.URL.createObjectURL(e.stream);
+    };
+    yourConnection.onicecandidate = function(e){
+        e.candidate && send({
+            type: 'candidate',
+            candidate: e.candidate
+        });
+    };
+}
+callButton.addEventListener('click',(e)=>{
+    let theirname = theirnameInput.value;
+    if( theirname.length > 0 ){
+        startPeerConnection(theirname);
+    }
+});
+function startPeerConnection(user){
+    connectedUser = user;
+    yourConnection.createOffer(function(offer){
+        send({
+            type: 'offer',
+            offer: offer
+        });
+        yourConnection.setLocalDescription(offer);
+    },function(error){
+        console.log(error);
+    });
+};
+function onOffer(offer,name){
+    connectedUser = name;
+    yourConnection.setRemoteDescription(new RTCSessionDescription(offer));
+    yourConnection.createAnswer(function(answer){
+        yourConnection.setLocalDescription(answer);
+        send({
+            type: 'answer',
+            answer: answer
+        });
+    },function(err){
+        console.log(err);
+    });
+}
+function onAnswer(answer){
+    yourConnection.setRemoteDescription(new RTCSessionDescription(answer));
+}
+function onCandidate(candidate){
+    yourConnection.addIceCandidate(new RTCIceCandidate(candidate));
 }
