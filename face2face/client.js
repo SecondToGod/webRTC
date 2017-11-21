@@ -1,12 +1,15 @@
-let name,connectedUser;
-let connection = new WebSocket('ws://localhost:8888');
-let loginPage = document.querySelector('#login-page'),
+var name,connectedUser;
+var connection = new WebSocket('ws://localhost:8888');
+var loginPage = document.querySelector('#login-page'),
     usernameInput = document.querySelector('#username'),
     loginButton = document.querySelector('#login'),
     callPage = document.querySelector('#call-page'),
     theirnameInput = document.querySelector('#their-username'),
     callButton = document.querySelector('#call'),
     hangUpButton = document.querySelector('#hang-up');
+var yourvideo = document.querySelector('#yours'),
+    theirvideo = document.querySelector('#theirs'),
+    yourConnection,theirConnection,stream;
 
 connection.onopen = ()=>{
     console.log('connected .');
@@ -58,7 +61,7 @@ function onLogin(success){
         callPage.style.display = 'block';
         startConnection();//初始化媒体流和连接信息
     }
-}
+};
 function onOffer(offer,name){
     connectedUser = name;
     yourConnection.setRemoteDescription(new RTCSessionDescription(offer));
@@ -71,13 +74,13 @@ function onOffer(offer,name){
     },function(err){
         console.log(err);
     });
-}
+};
 function onAnswer(answer){
     yourConnection.setRemoteDescription(new RTCSessionDescription(answer));
-}
+};
 function onCandidate(candidate){
     yourConnection.addIceCandidate(new RTCIceCandidate(candidate));
-}
+};
 function onLeave(){
     connectedUser = null;
     theirvideo.src = null;
@@ -85,11 +88,7 @@ function onLeave(){
     yourConnection.onicecandidate = null;
     yourConnection.onaddstream = null;
     setupPeerConnection(stream);
-}
-let yourvideo = document.querySelector('#yours'),
-    theirvideo = document.querySelector('#theirs'),
-    yourConnection,theirConnection,stream;
-
+};
 function startConnection(){
     navigator.getUserMedia = navigator.getUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia
                             || navigator.webkitGetUserMedia;
@@ -115,23 +114,22 @@ function startConnection(){
             alert('对你不起，你的浏览器不支持RTCPeerConnection');
         }
     }
-}
+};
 function setupPeerConnection(stream){
-    let configuration = {
-        //'iceServers': [{'url':'stun:stun.1.google.com:19302'}]
-    };
-    yourConnection = new RTCPeerConnection(configuration);
+    let configuration = null;
+    //'iceServers': [{'url':'stun:stun.1.google.com:19302'}]
+    yourConnection = new RTCPeerConnection(configuration);//初始化本地连接
     yourConnection.addStream(stream);
-    yourConnection.onaddstream = function(e){
+    yourConnection.onaddstream = (e)=>{
         theirvideo.src = window.URL.createObjectURL(e.stream);
     };
-    yourConnection.onicecandidate = function(e){
+    yourConnection.onicecandidate = (e)=>{
         e.candidate && send({
             type: 'candidate',
             candidate: e.candidate
         });
     };
-}
+ };
 callButton.addEventListener('click',(e)=>{
     let theirname = theirnameInput.value;
     if( theirname.length > 0 ){
@@ -146,15 +144,14 @@ function startPeerConnection(user){
             offer: offer
         });
         yourConnection.setLocalDescription(offer);
-    },function(error){
+    },(error)=>{
         console.log(error);
     });
 };
-
 hangUpButton.addEventListener('click',(e)=>{
     send({
         type: 'leave'
     });
     onLeave();
-})
+});
 
