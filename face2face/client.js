@@ -1,5 +1,13 @@
 let name,connectedUser;
-const connection = new WebSocket('ws://localhost:8888');
+let connection = new WebSocket('ws://localhost:8888');
+let loginPage = document.querySelector('#login-page'),
+    usernameInput = document.querySelector('#username'),
+    loginButton = document.querySelector('#login'),
+    callPage = document.querySelector('#call-page'),
+    theirnameInput = document.querySelector('#their-username'),
+    callButton = document.querySelector('#call'),
+    hangUpButton = document.querySelector('#hang-up');
+
 connection.onopen = ()=>{
     console.log('connected .');
 };
@@ -32,21 +40,13 @@ function send(message){
     connection.send(JSON.stringify(message));
 }
 //登录
-let loginPage = document.querySelector('#login-page'),
-    usernameInput = document.querySelector('#username'),
-    loginButton = document.querySelector('#login'),
-    callPage = document.querySelector('#call-page'),
-    theirnameInput = document.querySelector('#their-username'),
-    callButton = document.querySelector('#call'),
-    hangUpButton = document.querySelector('#hang-up');
-
 callPage.style.display = 'none';
 loginButton.addEventListener('click',(e)=>{
     name = usernameInput.value;
-    if(name.length>0){
+    if(name.length > 0){
         send({
             type: 'login',
-            name: name,
+            name: name
         });
     }
 });
@@ -56,12 +56,40 @@ function onLogin(success){
     }else{
         loginPage.style.display = 'none';
         callPage.style.display = 'block';
-        startConnection();//开始一个对等连接
+        startConnection();//初始化媒体流和连接信息
     }
+}
+function onOffer(offer,name){
+    connectedUser = name;
+    yourConnection.setRemoteDescription(new RTCSessionDescription(offer));
+    yourConnection.createAnswer(function(answer){
+        yourConnection.setLocalDescription(answer);
+        send({
+            type: 'answer',
+            answer: answer
+        });
+    },function(err){
+        console.log(err);
+    });
+}
+function onAnswer(answer){
+    yourConnection.setRemoteDescription(new RTCSessionDescription(answer));
+}
+function onCandidate(candidate){
+    yourConnection.addIceCandidate(new RTCIceCandidate(candidate));
+}
+function onLeave(){
+    connectedUser = null;
+    theirvideo.src = null;
+    yourConnection.close();
+    yourConnection.onicecandidate = null;
+    yourConnection.onaddstream = null;
+    setupPeerConnection(stream);
 }
 let yourvideo = document.querySelector('#yours'),
     theirvideo = document.querySelector('#theirs'),
     yourConnection,theirConnection,stream;
+
 function startConnection(){
     navigator.getUserMedia = navigator.getUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia
                             || navigator.webkitGetUserMedia;
@@ -71,7 +99,7 @@ function startConnection(){
             audio: false,
         },(mystream)=>{
             stream = mystream;
-            yourvideo .src = window.URL.createObjectURL(stream);
+            yourvideo.src = window.URL.createObjectURL(stream);
         },(err)=>{
             console.log(err);
         });
@@ -82,7 +110,7 @@ function startConnection(){
         window.RTCIceCandidate = window.RTCIceCandidate || window.webkitRTCIceCandidate ||window.mozRTCIceCandidate
                                 || window.msRTCIceCandidate;
         if(window.RTCPeerConnection){
-            setupPeerConnection(stream);
+            setupPeerConnection(stream);//初始化本地连接
         }else{
             alert('对你不起，你的浏览器不支持RTCPeerConnection');
         }
@@ -107,7 +135,7 @@ function setupPeerConnection(stream){
 callButton.addEventListener('click',(e)=>{
     let theirname = theirnameInput.value;
     if( theirname.length > 0 ){
-        startPeerConnection(theirname);
+        startPeerConnection(theirname);//开始一个对等连接
     }
 });
 function startPeerConnection(user){
@@ -122,22 +150,11 @@ function startPeerConnection(user){
         console.log(error);
     });
 };
-function onOffer(offer,name){
-    connectedUser = name;
-    yourConnection.setRemoteDescription(new RTCSessionDescription(offer));
-    yourConnection.createAnswer(function(answer){
-        yourConnection.setLocalDescription(answer);
-        send({
-            type: 'answer',
-            answer: answer
-        });
-    },function(err){
-        console.log(err);
+
+hangUpButton.addEventListener('click',(e)=>{
+    send({
+        type: 'leave'
     });
-}
-function onAnswer(answer){
-    yourConnection.setRemoteDescription(new RTCSessionDescription(answer));
-}
-function onCandidate(candidate){
-    yourConnection.addIceCandidate(new RTCIceCandidate(candidate));
-}
+    onLeave();
+})
+
