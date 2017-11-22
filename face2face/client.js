@@ -9,6 +9,9 @@ var loginPage = document.querySelector('#login-page'),
     hangUpButton = document.querySelector('#hang-up');
 var yourvideo = document.querySelector('#yours'),
     theirvideo = document.querySelector('#theirs'),
+    received = document.querySelector('#received'),
+    sendButton = document.querySelector('#send'),
+    inputMessage = document.querySelector('#message'),
     yourConnection,theirConnection,stream;
 
 connection.onopen = ()=>{
@@ -119,6 +122,7 @@ function setupPeerConnection(stream){
     let configuration = null;
     //'iceServers': [{'url':'stun:stun.1.google.com:19302'}]
     yourConnection = new RTCPeerConnection(configuration);//初始化本地连接
+    openDataChannel();
     yourConnection.addStream(stream);
     yourConnection.onaddstream = (e)=>{
         theirvideo.src = window.URL.createObjectURL(e.stream);
@@ -154,4 +158,29 @@ hangUpButton.addEventListener('click',(e)=>{
     });
     onLeave();
 });
-
+function openDataChannel(){
+    let dataChannelOptions = {
+        reliable: true
+    };
+    dataChannel = yourConnection.createDataChannel('myLabel',dataChannelOptions);
+    dataChannel.onerror = (err)=>{
+        console.log('data channel error:',err);
+    };
+    dataChannel.onmessage = (e)=>{
+        console.log('got message:',e.data);
+        received.innerHtml += 'recv:'+e.data+'<br />';
+        received.scrollTop = received.scrollHeight;
+    };
+    dataChannel.onOpen = ()=>{
+        dataChannel.send(name,'has connected .');
+    };
+    dataChannel.onClose = ()=>{
+        console.log('The data channel is closed .');
+    }
+};
+sendButton.addEventListener('click',(e)=>{
+    let val = inputMessage.value;
+    received.innerHTML += 'send:'+ val + '<br />';
+    received.scrollTop = received.scrollHeight;
+    dataChannel.send(val);
+});
