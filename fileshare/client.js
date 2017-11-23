@@ -1,5 +1,3 @@
-import { setTimeout } from "timers";
-
 let name,connectedUser;
 let connection = new WebSocket('ws://localhost:8888');
 let yourConnection,dataChannel,currentFile,currentFileSize,currentFileMeta;
