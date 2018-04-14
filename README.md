@@ -1,6 +1,6 @@
 # webRTC
 ``
-webRTC learning guide
+webRTC learning demo
 ``
 <br>
 ``
